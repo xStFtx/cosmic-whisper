@@ -32,7 +32,7 @@ A sophisticated signal processing project that generates and analyzes "alien sig
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/xStFtx/cosmic-whisper.git
 cd "cosmic whisper"
 ```
 
