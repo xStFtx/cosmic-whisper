@@ -555,40 +555,608 @@ def create_4d_visualization(signal, quaternion_signal, ai_results):
     
     return fig
 
+# Advanced AI Models
+class VariationalAutoencoder(nn.Module):
+    """
+    Variational Autoencoder for probabilistic signal representation.
+    """
+    def __init__(self, input_dim, hidden_dim=128, latent_dim=32):
+        super(VariationalAutoencoder, self).__init__()
+        
+        # Encoder
+        self.encoder = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.ReLU()
+        )
+        
+        # Latent space parameters
+        self.fc_mu = nn.Linear(hidden_dim // 2, latent_dim)
+        self.fc_logvar = nn.Linear(hidden_dim // 2, latent_dim)
+        
+        # Decoder
+        self.decoder = nn.Sequential(
+            nn.Linear(latent_dim, hidden_dim // 2),
+            nn.ReLU(),
+            nn.Linear(hidden_dim // 2, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, input_dim)
+        )
+    
+    def encode(self, x):
+        h = self.encoder(x)
+        mu = self.fc_mu(h)
+        logvar = self.fc_logvar(h)
+        return mu, logvar
+    
+    def reparameterize(self, mu, logvar):
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)
+        return mu + eps * std
+    
+    def decode(self, z):
+        return self.decoder(z)
+    
+    def forward(self, x):
+        mu, logvar = self.encode(x)
+        z = self.reparameterize(mu, logvar)
+        recon = self.decode(z)
+        return recon, mu, logvar, z
+
+class TransformerSignalAnalyzer(nn.Module):
+    """
+    Transformer-based signal analyzer for temporal patterns.
+    """
+    def __init__(self, input_dim, d_model=256, nhead=8, num_layers=6):
+        super(TransformerSignalAnalyzer, self).__init__()
+        
+        self.input_projection = nn.Linear(input_dim, d_model)
+        self.positional_encoding = nn.Parameter(torch.randn(1000, d_model))
+        
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=d_model, 
+            nhead=nhead,
+            dim_feedforward=d_model * 4,
+            dropout=0.1,
+            batch_first=True
+        )
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers)
+        
+        self.classifier = nn.Sequential(
+            nn.Linear(d_model, d_model // 2),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(d_model // 2, 10)  # 10 pattern classes
+        )
+    
+    def forward(self, x):
+        # x shape: (batch_size, seq_len, input_dim)
+        seq_len = x.size(1)
+        
+        # Project to model dimension
+        x = self.input_projection(x)
+        
+        # Add positional encoding
+        x = x + self.positional_encoding[:seq_len].unsqueeze(0)
+        
+        # Apply transformer
+        transformer_out = self.transformer(x)
+        
+        # Global average pooling
+        features = transformer_out.mean(dim=1)
+        
+        # Classification
+        output = self.classifier(features)
+        
+        return output, features
+
+class GAN_SignalGenerator(nn.Module):
+    """
+    Generative Adversarial Network for synthetic signal generation.
+    """
+    def __init__(self, noise_dim=100, signal_dim=3, hidden_dim=256):
+        super(GAN_SignalGenerator, self).__init__()
+        
+        self.generator = nn.Sequential(
+            nn.Linear(noise_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim * 2),
+            nn.ReLU(),
+            nn.Linear(hidden_dim * 2, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, signal_dim),
+            nn.Tanh()
+        )
+        
+        self.discriminator = nn.Sequential(
+            nn.Linear(signal_dim, hidden_dim),
+            nn.LeakyReLU(0.2),
+            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.LeakyReLU(0.2),
+            nn.Linear(hidden_dim // 2, 1),
+            nn.Sigmoid()
+        )
+    
+    def generate(self, noise):
+        return self.generator(noise)
+    
+    def discriminate(self, signal):
+        return self.discriminator(signal)
+
+class QuantumInspiredProcessor:
+    """
+    Quantum-inspired signal processing using superposition and entanglement concepts.
+    """
+    
+    @staticmethod
+    def quantum_fourier_transform(signal):
+        """
+        Quantum-inspired Fourier transform with phase relationships.
+        """
+        n = len(signal)
+        qft_result = np.zeros(n, dtype=complex)
+        
+        for k in range(n):
+            sum_val = 0
+            for j in range(n):
+                # Quantum phase factor with golden ratio modulation
+                phase = 2j * np.pi * k * j / n * GOLDEN_RATIO
+                sum_val += signal[j] * np.exp(-phase)
+            qft_result[k] = sum_val / np.sqrt(n)
+        
+        return qft_result
+    
+    @staticmethod
+    def entanglement_measure(signal1, signal2):
+        """
+        Measure quantum-like entanglement between two signals.
+        """
+        # Normalize signals
+        s1_norm = signal1 / np.linalg.norm(signal1)
+        s2_norm = signal2 / np.linalg.norm(signal2)
+        
+        # Create combined state (tensor product)
+        combined = np.outer(s1_norm, s2_norm)
+        
+        # Compute singular value decomposition
+        U, S, Vt = np.linalg.svd(combined)
+        
+        # Entanglement entropy (von Neumann entropy)
+        S_normalized = S**2 / np.sum(S**2)
+        S_normalized = S_normalized[S_normalized > 1e-10]  # Remove near-zero values
+        
+        entanglement = -np.sum(S_normalized * np.log2(S_normalized))
+        
+        return entanglement
+    
+    @staticmethod
+    def superposition_decomposition(signal, n_components=5):
+        """
+        Decompose signal into quantum-like superposition states.
+        """
+        # Create orthogonal basis using QR decomposition
+        n_points = len(signal)
+        random_matrix = np.random.randn(n_points, n_components)
+        Q, R = np.linalg.qr(random_matrix)
+        
+        # Project signal onto quantum basis
+        coefficients = np.dot(Q.T, signal)
+        
+        # Compute probability amplitudes
+        amplitudes = coefficients / np.linalg.norm(coefficients)
+        
+        # Quantum state probabilities
+        probabilities = np.abs(amplitudes)**2
+        
+        return {
+            'amplitudes': amplitudes,
+            'probabilities': probabilities,
+            'basis': Q,
+            'coherence': np.sum(probabilities * np.log2(probabilities + 1e-10))
+        }
+
+def generate_hyperdimensional_signal(n_points=1000, dimensions=7):
+    """
+    Generate hyperdimensional alien signals using advanced mathematical constructs.
+    """
+    t = np.linspace(0, 4*np.pi, n_points)
+    signal = np.zeros((n_points, dimensions))
+    
+    for dim in range(dimensions):
+        if dim == 0:
+            # Fibonacci spiral modulation
+            fib_sequence = fibonacci_sequence(n_points // 10)
+            fib_interp = np.interp(t, np.linspace(0, 4*np.pi, len(fib_sequence)), fib_sequence)
+            signal[:, dim] = np.sin(t * GOLDEN_RATIO) * np.cos(fib_interp / 100)
+            
+        elif dim == 1:
+            # Riemann Zeta function inspired
+            zeta_approx = np.sum([1/n**(2 + 0.1*t) for n in range(1, 20)], axis=0)
+            signal[:, dim] = zeta_approx / np.max(np.abs(zeta_approx))
+            
+        elif dim == 2:
+            # Strange attractor projection
+            lorenz_data = generate_chaotic_signal(n_points, 3)
+            signal[:, dim] = np.sin(lorenz_data[:, 0]) * np.exp(-0.1 * np.abs(lorenz_data[:, 1]))
+            
+        elif dim == 3:
+            # Quantum oscillator
+            signal[:, dim] = np.real(np.exp(1j * t * PLANCK_CONSTANT * 1e34) * 
+                                   np.exp(-t**2 / (2 * GOLDEN_RATIO)))
+            
+        elif dim == 4:
+            # Fractal dimension signal
+            signal[:, dim] = mandelbrot_dimension_signal(t)
+            
+        elif dim == 5:
+            # Hyperbolic geometry
+            signal[:, dim] = np.tanh(t * EULER_GAMMA) * np.sinh(t / GOLDEN_RATIO)
+            
+        else:
+            # Higher dimensional projections
+            signal[:, dim] = np.sin(t * dim * GOLDEN_RATIO) * np.cos(t / (dim + 1))
+    
+    return signal
+
+def fibonacci_sequence(n):
+    """Generate Fibonacci sequence."""
+    fib = [1, 1]
+    for i in range(2, n):
+        fib.append(fib[i-1] + fib[i-2])
+    return np.array(fib)
+
+def mandelbrot_dimension_signal(t):
+    """Generate signal based on Mandelbrot set boundary dimension."""
+    signal = np.zeros_like(t)
+    for i, time_val in enumerate(t):
+        c = complex(time_val / 10, time_val / 20)
+        z = 0
+        iterations = 0
+        max_iter = 100
+        
+        while abs(z) <= 2 and iterations < max_iter:
+            z = z**2 + c
+            iterations += 1
+        
+        # Fractal dimension approximation
+        signal[i] = iterations / max_iter
+    
+    return signal
+
+def advanced_wavelet_analysis(signal):
+    """
+    Perform advanced wavelet analysis with multiple scales.
+    """
+    scales = np.arange(1, 128)
+    wavelet_coeffs = []
+    
+    for dim in range(signal.shape[1]):
+        dim_signal = signal[:, dim]
+        
+        # Continuous wavelet transform
+        coefficients, frequencies = cwt(dim_signal, morlet, scales)
+        
+        # Wavelet entropy
+        energy = np.abs(coefficients)**2
+        total_energy = np.sum(energy)
+        rel_energy = energy / total_energy
+        wavelet_entropy = -np.sum(rel_energy * np.log2(rel_energy + 1e-10))
+        
+        wavelet_coeffs.append({
+            'coefficients': coefficients,
+            'frequencies': frequencies,
+            'entropy': wavelet_entropy,
+            'energy_distribution': rel_energy
+        })
+    
+    return wavelet_coeffs
+
+def multi_scale_complexity_analysis(signal):
+    """
+    Analyze signal complexity across multiple scales.
+    """
+    results = {}
+    
+    for scale in [1, 2, 4, 8, 16]:
+        # Coarse-grain the signal
+        if scale == 1:
+            coarse_signal = signal
+        else:
+            coarse_signal = np.array([
+                np.mean(signal[i:i+scale], axis=0) 
+                for i in range(0, len(signal) - scale + 1, scale)
+            ])
+        
+        # Calculate complexity measures
+        results[f'scale_{scale}'] = {
+            'sample_entropy': calculate_sample_entropy(coarse_signal),
+            'lz_complexity': lempel_ziv_complexity(coarse_signal),
+            'fractal_dimension': estimate_fractal_dimension(coarse_signal)
+        }
+    
+    return results
+
+def calculate_sample_entropy(signal, m=2, r=0.2):
+    """Calculate sample entropy."""
+    N = len(signal)
+    if len(signal.shape) > 1:
+        signal = signal.flatten()
+    
+    def _maxdist(xi, xj, m):
+        return max([abs(ua - va) for ua, va in zip(xi, xj)])
+    
+    def _phi(m):
+        patterns = np.array([signal[i:i+m] for i in range(N-m+1)])
+        C = np.zeros(N-m+1)
+        for i in range(N-m+1):
+            template = patterns[i]
+            distances = [_maxdist(template, patterns[j], m) for j in range(N-m+1)]
+            C[i] = sum([1 for d in distances if d <= r])
+        
+        phi = np.mean([np.log(c) for c in C if c > 0])
+        return phi
+    
+    return _phi(m) - _phi(m+1)
+
+def lempel_ziv_complexity(signal):
+    """Calculate Lempel-Ziv complexity."""
+    # Convert to binary string
+    signal_flat = signal.flatten()
+    binary_string = ''.join(['1' if x > np.median(signal_flat) else '0' for x in signal_flat])
+    
+    i, k, l = 0, 1, 1
+    c, k_max = 1, 1
+    n = len(binary_string)
+    
+    while k + l - 1 < n:
+        if binary_string[i + l - 1] == binary_string[k + l - 1]:
+            l += 1
+        else:
+            if l > k_max:
+                k_max = l
+            i += 1
+            if i == k:
+                c += 1
+                k += k_max
+                i, l, k_max = 0, 1, 1
+            else:
+                l = 1
+    
+    if l != 1:
+        c += 1
+    
+    return c
+
+def estimate_fractal_dimension(signal):
+    """Estimate fractal dimension using box counting."""
+    if len(signal.shape) > 1:
+        signal = signal[:, 0]  # Use first dimension
+    
+    # Normalize signal
+    signal = (signal - np.min(signal)) / (np.max(signal) - np.min(signal))
+    
+    # Box counting
+    scales = np.logspace(0.01, 2, num=50, dtype=int)
+    scales = np.unique(scales)
+    
+    counts = []
+    for scale in scales:
+        # Quantize signal
+        quantized = np.floor(signal * scale).astype(int)
+        unique_boxes = len(np.unique(quantized))
+        counts.append(unique_boxes)
+    
+    # Linear regression in log-log space
+    log_scales = np.log(scales)
+    log_counts = np.log(counts)
+    
+    # Remove invalid values
+    valid = np.isfinite(log_scales) & np.isfinite(log_counts)
+    if np.sum(valid) < 2:
+        return 1.0
+    
+    slope, _ = np.polyfit(log_scales[valid], log_counts[valid], 1)
+    fractal_dim = slope
+    
+    return abs(fractal_dim)
+
+def cross_correlation_analysis(signals_dict):
+    """
+    Perform cross-correlation analysis between different signal types.
+    """
+    signal_names = list(signals_dict.keys())
+    n_signals = len(signal_names)
+    
+    correlation_matrix = np.zeros((n_signals, n_signals))
+    lag_matrix = np.zeros((n_signals, n_signals))
+    
+    for i, name1 in enumerate(signal_names):
+        for j, name2 in enumerate(signal_names):
+            if i != j:
+                sig1 = signals_dict[name1][:, 0]  # Use first dimension
+                sig2 = signals_dict[name2][:, 0]
+                
+                # Normalize signals
+                sig1 = (sig1 - np.mean(sig1)) / np.std(sig1)
+                sig2 = (sig2 - np.mean(sig2)) / np.std(sig2)
+                
+                # Cross-correlation
+                correlation = scipy_signal.correlate(sig1, sig2, mode='full')
+                correlation = correlation / len(sig1)
+                
+                # Find maximum correlation and lag
+                max_corr_idx = np.argmax(np.abs(correlation))
+                max_correlation = correlation[max_corr_idx]
+                lag = max_corr_idx - len(sig1) + 1
+                
+                correlation_matrix[i, j] = max_correlation
+                lag_matrix[i, j] = lag
+            else:
+                correlation_matrix[i, j] = 1.0
+                lag_matrix[i, j] = 0
+    
+    return {
+        'correlation_matrix': correlation_matrix,
+        'lag_matrix': lag_matrix,
+        'signal_names': signal_names
+    }
+
 def main():
     """
-    Main function to demonstrate the cosmic whisper signal processing pipeline.
+    Advanced cosmic whisper signal processing with cutting-edge AI and quantum-inspired techniques.
     """
-    print("🌌 Cosmic Whisper - Quaternion Signal Analysis 🌌")
-    print("=" * 50)
+    print("🌌 ADVANCED COSMIC WHISPER - Hyperdimensional Signal Analysis 🌌")
+    print("=" * 70)
+    print("🚀 Initializing quantum-inspired alien signal decoder...")
     
-    # Generate the signal
-    print("📡 Generating cosmic signal...")
-    signal = get_signal()
-    print(f"Signal shape: {signal.shape}")
+    # Generate multiple types of advanced signals
+    print("\n📡 Generating hyperdimensional cosmic signals...")
+    signal_length = 1000
     
-    # Transform to quaternion representation
-    print("🔄 Converting to quaternion representation...")
-    quaternion_signal = []
+    signals_collection = {
+        'original': get_signal(),
+        'hyperdimensional': generate_hyperdimensional_signal(signal_length, 7),
+        'fractal': generate_fractal_signal(signal_length, 3),
+        'prime': generate_prime_sequence_signal(signal_length, 3),
+        'chaotic': generate_chaotic_signal(signal_length, 3)
+    }
     
-    # Convert each 3D vector to a quaternion
-    for i in range(len(signal)):
-        # Normalize the vector to prevent overflow in quaternion conversion
-        vector = signal[i]
-        norm = np.linalg.norm(vector)
-        if norm > 0:
-            normalized_vector = vector / norm * min(norm, 1.0)  # Scale down if too large
-        else:
-            normalized_vector = vector
+    print(f"✅ Generated {len(signals_collection)} signal types")
+    for name, sig in signals_collection.items():
+        print(f"   {name.capitalize()}: {sig.shape}")
+    
+    # Transform signals to quaternion representation
+    print("\n🔄 Converting to quaternion hypersphere...")
+    quaternion_signals = {}
+    
+    def safe_transform_signal(sig):
+        quaternion_sig = []
+        for i in range(len(sig)):
+            vector = sig[i, :3]  # Use first 3 dimensions for quaternion
+            norm = np.linalg.norm(vector)
+            if norm > 0:
+                normalized_vector = vector / norm * min(norm, 1.0)
+            else:
+                normalized_vector = vector
+            q = transform_signal(normalized_vector)
+            quaternion_sig.append(q)
+        return quaternion_sig
+    
+    for name, sig in signals_collection.items():
+        quaternion_signals[name] = safe_transform_signal(sig)
+    
+    # Quantum-inspired analysis
+    print("\n🔮 Performing quantum-inspired signal analysis...")
+    quantum_processor = QuantumInspiredProcessor()
+    quantum_results = {}
+    
+    for name, sig in signals_collection.items():
+        if sig.shape[1] >= 1:
+            qft_result = quantum_processor.quantum_fourier_transform(sig[:, 0])
+            superposition = quantum_processor.superposition_decomposition(sig[:, 0])
+            
+            quantum_results[name] = {
+                'qft': qft_result,
+                'superposition': superposition,
+                'coherence': superposition['coherence']
+            }
+    
+    # Cross-correlation analysis
+    print("🔗 Analyzing signal entanglement and correlations...")
+    correlation_analysis = cross_correlation_analysis(signals_collection)
+    
+    # Entanglement measures
+    entanglement_matrix = np.zeros((len(signals_collection), len(signals_collection)))
+    signal_names = list(signals_collection.keys())
+    
+    for i, name1 in enumerate(signal_names):
+        for j, name2 in enumerate(signal_names):
+            if i != j:
+                entanglement = quantum_processor.entanglement_measure(
+                    signals_collection[name1][:, 0],
+                    signals_collection[name2][:, 0]
+                )
+                entanglement_matrix[i, j] = entanglement
+    
+    # Advanced AI analysis
+    print("\n🤖 Training advanced AI models...")
+    
+    # Train Variational Autoencoder
+    main_signal = signals_collection['hyperdimensional']
+    signal_tensor = torch.FloatTensor(StandardScaler().fit_transform(main_signal))
+    
+    vae = VariationalAutoencoder(main_signal.shape[1], hidden_dim=256, latent_dim=64)
+    vae_optimizer = torch.optim.Adam(vae.parameters(), lr=0.001)
+    
+    print("   Training VAE...")
+    for epoch in range(150):
+        vae_optimizer.zero_grad()
+        recon, mu, logvar, z = vae(signal_tensor)
         
-        q = transform_signal(normalized_vector)
-        quaternion_signal.append(q)
+        # VAE loss
+        recon_loss = F.mse_loss(recon, signal_tensor)
+        kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+        total_loss = recon_loss + 0.001 * kl_loss
+        
+        total_loss.backward()
+        vae_optimizer.step()
+        
+        if epoch % 50 == 0:
+            print(f"      Epoch {epoch}: Loss {total_loss.item():.4f}")
     
-    print(f"Quaternion signal length: {len(quaternion_signal)}")
+    # Extract VAE features
+    with torch.no_grad():
+        _, mu, logvar, latent_features = vae(signal_tensor)
+        vae_features = latent_features.numpy()
     
-    # Perform Fourier analysis on quaternion data
-    print("🔍 Performing quaternion Fourier analysis...")
-    fourier_results = quaternion_over_fourier(quaternion_signal)
+    # Train Transformer for sequence analysis
+    print("   Training Transformer...")
+    
+    # Prepare sequence data
+    seq_length = 100
+    sequences = []
+    for i in range(0, len(main_signal) - seq_length, seq_length // 2):
+        sequences.append(main_signal[i:i+seq_length])
+    
+    sequence_tensor = torch.FloatTensor(np.array(sequences))
+    
+    transformer = TransformerSignalAnalyzer(main_signal.shape[1])
+    transformer_optimizer = torch.optim.Adam(transformer.parameters(), lr=0.0001)
+    
+    # Create pseudo-labels for pattern classification
+    pseudo_labels = torch.randint(0, 10, (len(sequences),))
+    
+    for epoch in range(100):
+        transformer_optimizer.zero_grad()
+        output, features = transformer(sequence_tensor)
+        loss = F.cross_entropy(output, pseudo_labels)
+        loss.backward()
+        transformer_optimizer.step()
+        
+        if epoch % 25 == 0:
+            print(f"      Epoch {epoch}: Loss {loss.item():.4f}")
+    
+    # Extract transformer features
+    with torch.no_grad():
+        _, transformer_features = transformer(sequence_tensor)
+        transformer_features = transformer_features.numpy()
+    
+    # Advanced wavelet analysis
+    print("\n🌊 Performing multi-scale wavelet analysis...")
+    wavelet_results = {}
+    for name, sig in signals_collection.items():
+        wavelet_results[name] = advanced_wavelet_analysis(sig)
+    
+    # Multi-scale complexity analysis
+    print("📏 Computing multi-scale complexity measures...")
+    complexity_results = {}
+    for name, sig in signals_collection.items():
+        complexity_results[name] = multi_scale_complexity_analysis(sig)
+    
+    # Perform traditional analysis
+    print("\n🔍 Performing quaternion Fourier analysis...")
+    fourier_results = quaternion_over_fourier(quaternion_signals['original'])
     
     # Find dominant frequencies
     combined_magnitude = np.sqrt(
@@ -598,17 +1166,17 @@ def main():
         fourier_results['magnitudes']['z']**2
     )
     
-    # Get the most significant frequencies (excluding DC component)
-    freq_indices = np.argsort(combined_magnitude[1:])[-5:] + 1  # Top 5 frequencies
+    freq_indices = np.argsort(combined_magnitude[1:])[-5:] + 1
     dominant_freqs = fourier_results['frequencies'][freq_indices]
     dominant_magnitudes = combined_magnitude[freq_indices]
     
     print("\n🎵 Dominant frequencies detected:")
     for freq, mag in zip(dominant_freqs, dominant_magnitudes):
         print(f"  Frequency: {freq:.4f}, Magnitude: {mag:.2f}")
-      # Plot results
-    print("\n📊 Generating visualizations...")
-    plot_results(signal, quaternion_signal, fourier_results)
+    
+    # Generate visualizations
+    print("\n📊 Generating advanced visualizations...")
+    plot_results(signals_collection['original'], quaternion_signals['original'], fourier_results)
     
     print("\n✨ Analysis complete! The cosmic whispers have been decoded. ✨")
 
