@@ -514,22 +514,15 @@ class TopologicalAnalyzer:
         # Persistence statistics
         component_persistence = [pd['scale'] for pd in persistence_diagrams if pd['betti_0'] > 1]
         loop_persistence = [pd['scale'] for pd in persistence_diagrams if pd['betti_1'] > 0]
-        
         return {
             'max_components': max_components,
             'max_loops': max_loops,
             'component_persistence_range': (min(component_persistence) if component_persistence else 0,
                                           max(component_persistence) if component_persistence else 0),
             'loop_persistence_range': (min(loop_persistence) if loop_persistence else 0,
-                                     max(loop_persistence) if loop_persistence else 0),            'topological_complexity': max_components + max_loops
+                                     max(loop_persistence) if loop_persistence else 0),
+            'topological_complexity': max_components + max_loops
         }
-
-class TopologicalAnalyzer:
-    """
-    Topological data analysis for discovering signal structure.
-    Computes persistent homology and topological features.
-    """
-    
     def process_signal(self, signal):
         """
         Process signal using topological data analysis.
@@ -539,8 +532,7 @@ class TopologicalAnalyzer:
             
         Returns:
             dict: Topological analysis results
-        """
-        # Perform persistent homology analysis
+        """        # Perform persistent homology analysis
         persistence_results = self.persistent_homology_analysis(signal)
         
         # Extract key topological features
@@ -668,13 +660,18 @@ class AdvancedMLEnsemble:
         spectral_rolloff = self._spectral_rolloff(freqs, psd)
         
         features.extend([total_power, spectral_centroid, spectral_spread, spectral_rolloff])
-        
-        # Complexity measures (with error handling)
+          # Complexity measures (simplified implementations to avoid circular imports)
         try:
-            from main import calculate_sample_entropy, lempel_ziv_complexity, estimate_fractal_dimension
-            sample_ent = calculate_sample_entropy(sig)
-            lz_comp = lempel_ziv_complexity(sig.reshape(-1, 1))
-            fractal_dim = estimate_fractal_dimension(sig.reshape(-1, 1))
+            # Simple entropy approximation
+            hist, _ = np.histogram(sig, bins=50, density=True)
+            hist = hist[hist > 0]
+            sample_ent = -np.sum(hist * np.log2(hist)) if len(hist) > 0 else 0
+            
+            # Simple complexity measure
+            lz_comp = len(np.unique(np.diff(sig))) / len(sig) if len(sig) > 1 else 0
+            
+            # Simple fractal dimension approximation
+            fractal_dim = 1.0 + np.log(np.std(sig)) / np.log(len(sig)) if np.std(sig) > 0 else 1.0
         except:
             sample_ent, lz_comp, fractal_dim = 0, 0, 1.0
         
