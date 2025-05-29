@@ -97,6 +97,49 @@ class QuantumFieldProcessor:
             'quantum_pressure': quantum_pressure,
             'zero_point_contribution': zero_point
         }
+    
+    def process_signal(self, signal):
+        """
+        Process signal using quantum field theory inspired transformations.
+        
+        Args:
+            signal: Input signal array (n_points, dimensions)
+            
+        Returns:
+            dict: Quantum field analysis results
+        """
+        # Apply quantum field transform
+        field_transform = self.apply_quantum_field_transform(signal)
+        
+        # Calculate virtual particle interactions
+        virtual_particles = 0
+        vacuum_energy = 0
+        
+        for dim in range(min(signal.shape[1], 3)):  # Process up to 3 dimensions
+            dim_signal = signal[:, dim]
+            
+            # Count virtual particle creation events (high energy fluctuations)
+            energy_threshold = np.std(dim_signal) * 2
+            virtual_events = np.sum(np.abs(dim_signal) > energy_threshold)
+            virtual_particles += virtual_events
+            
+            # Calculate vacuum energy contribution
+            vacuum_contribution = np.mean(self.vacuum_state[:len(dim_signal)]) * np.var(dim_signal)
+            vacuum_energy += np.abs(vacuum_contribution)
+        
+        # Casimir effect between signal dimensions
+        casimir_results = {}
+        if signal.shape[1] >= 2:
+            casimir_results = self.calculate_casimir_effect(signal[:, 0], signal[:, 1])
+        
+        return {
+            'field_transform': field_transform,
+            'virtual_particles': virtual_particles,
+            'vacuum_energy': vacuum_energy,
+            'casimir_effect': casimir_results,
+            'quantum_coherence': np.mean(np.abs(field_transform)),
+            'field_dimensions': self.field_dimensions
+        }
 
 class NeuromorphicProcessor(nn.Module):
     """

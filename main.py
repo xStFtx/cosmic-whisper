@@ -1348,10 +1348,9 @@ def analyze_with_advanced_processors(signal, signal_name="unknown"):
         qfp = QuantumFieldProcessor()
         quantum_results = qfp.process_signal(signal)
         results['quantum_field'] = quantum_results
-        
-        # Neuromorphic Processing
+          # Neuromorphic Processing
         print("🧠 Neuromorphic spike processing...")
-        neuro = NeuromorphicProcessor(n_neurons=min(100, signal.shape[1]*20))
+        neuro = NeuromorphicProcessor(input_dim=signal.shape[1], n_neurons=min(100, signal.shape[1]*20))
         spike_results = neuro.process_signal(signal)
         results['neuromorphic'] = spike_results
         
